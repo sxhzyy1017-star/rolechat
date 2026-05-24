@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#121212">
+<title>角色 · 对话</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #121212;
+  --bg2: #1a1a1a;
+  --bg3: #242424;
+  --accent: #c5a47e;
+  --accent-rgb: 197, 164, 126;
+  --accent-dim: rgba(var(--accent-rgb), 0.15);
+  --text: #e5e5e5;
+  --text2: #8c8c8c;
+  --text3: #5a5a5a;
+  --border: #2a2a2a;
+  --card: #1e1e1e;
+  --shadow: 0 4px 20px rgba(0,0,0,0.3);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-xs: 8px;
+  --font: 'Noto Serif SC', 'PingFang SC', 'Microsoft YaHei', serif;
+  --transition: 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+::-webkit-scrollbar { width: 0; display: none; }
+html { scrollbar-width: none; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh; overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--accent-dim); color: var(--text); }
+
+/* ===== Layout ===== */
+.app-container { display: flex; height: 100vh; width: 100vw; }
+
+/* ===== Sidebar ===== */
+.sidebar {
+  width: 280px; min-width: 280px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  transition: transform var(--transition);
+  z-index: 20;
+}
+.sidebar-header {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.sidebar-header h2 {
+  font-size: 15px; font-weight: 600; letter-spacing: 2px;
+  color: var(--accent);
+}
+.sidebar-header .btns { display: flex; gap: 2px; }
+.sidebar-header .btn-icon {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: none; background: transparent; color: var(--text3);
+  font-size: 16px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: all var(--transition);
+}
+.sidebar-header .btn-icon:hover { background: var(--accent-dim); color: var(--accent); }
+
+.char-list { flex: 1; overflow-y: auto; padding: 10px; }
+.char-item {
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+  transition: all var(--transition);
+  border: 1px solid transparent;
+  position: relative;
+}
+.char-item:hover { border-color: var(--accent); background: rgba(var(--accent-rgb), 0.04); }
+.char-item.active { border-color: var(--accent); background: var(--accent-dim); }
+.char-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; background: var(--bg3); flex-shrink: 0;
+}
+.char-info { flex: 1; min-width: 0; }
+.char-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.char-preview { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.char-actions {
+  position: absolute; right: 6px; top: 6px;
+  display: none; gap: 2px;
+}
+.char-item:hover .char-actions { display: flex; }
+.char-actions button {
+  background: none; border: none; color: var(--text3); cursor: pointer;
+  font-size: 13px; padding: 4px 6px; border-radius: 4px;
+  transition: all var(--transition);
+}
+.char-actions button:hover { color: var(--accent); background: var(--accent-dim); }
+.char-actions .del-btn:hover { color: #e74c3c; background: rgba(231,76,60,0.12); }
+
+.conv-list { margin-top: 6px; padding-left: 10px; display: none; }
+.char-item.active .conv-list { display: block; }
+.conv-item {
+  font-size: 12px; color: var(--text3); padding: 5px 8px;
+  border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;
+  transition: all var(--transition);
+}
+.conv-item:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+.conv-item.active { color: var(--accent); }
+.conv-item .conv-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conv-item .del-conv {
+  background: none; border: none; color: var(--text3); cursor: pointer;
+  font-size: 11px; padding: 2px 6px; border-radius: 4px; display: none;
+}
+.conv-item:hover .del-conv { display: block; }
+.conv-item .del-conv:hover { color: #e74c3c; }
+.new-conv-btn {
+  font-size: 12px; color: var(--accent); cursor: pointer; padding: 4px 8px;
+  border-radius: 6px; display: flex; align-items: center; gap: 4px;
+  opacity: 0.7; transition: all var(--transition);
+}
+.new-conv-btn:hover { opacity: 1; background: var(--accent-dim); }
+
+/* ===== Empty state ===== */
+.empty-state {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; color: var(--text3); padding: 32px; text-align: center;
+}
+.empty-state .icon { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
+.empty-state h3 { font-size: 16px; margin-bottom: 6px; color: var(--text2); font-weight: 500; letter-spacing: 1px; }
+.empty-state p { font-size: 13px; max-width: 240px; line-height: 1.7; color: var(--text3); }
+
+/* ===== Main ===== */
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+.main-header {
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--bg2); min-height: 60px;
+}
+.main-header .info { display: flex; align-items: center; gap: 10px; }
+.main-header .char-name { font-size: 15px; font-weight: 600; letter-spacing: 0.5px; }
+.main-header .conv-title { font-size: 12px; color: var(--text3); margin-top: 1px; }
+
+/* ===== Messages ===== */
+.messages {
+  flex: 1; overflow-y: auto; padding: 20px 24px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.msg {
+  display: flex; gap: 10px; max-width: 78%;
+  animation: msgIn 0.35s ease;
+}
+@keyframes msgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.msg.user { align-self: flex-end; flex-direction: row-reverse; }
+.msg .avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0; margin-top: 4px;
+}
+.msg.user .avatar { background: var(--accent-dim); }
+.msg.bot .avatar { background: var(--bg3); }
+.msg .bubble {
+  padding: 10px 16px; border-radius: 12px;
+  line-height: 1.7; font-size: 14px; letter-spacing: 0.02em;
+  position: relative; word-wrap: break-word; white-space: pre-wrap;
+  font-family: var(--font);
+}
+.msg.bot .bubble {
+  background: var(--card); border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+  color: rgba(255,255,255,0.85);
+}
+.msg.user .bubble {
+  background: var(--accent); color: #121212;
+  border-bottom-right-radius: 4px;
+  font-weight: 500;
+}
+.msg .time {
+  font-size: 10px; color: var(--text3); margin-top: 3px; text-align: right; letter-spacing: 0.5px;
+}
+
+/* ===== Typing ===== */
+.typing .bubble { display: flex; gap: 5px; align-items: center; padding: 14px 18px; }
+.typing .dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--text3);
+  animation: dotBounce 1.4s infinite ease-in-out;
+}
+.typing .dot:nth-child(2) { animation-delay: 0.2s; }
+.typing .dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
+  30% { transform: translateY(-6px); opacity: 0.9; }
+}
+
+/* ===== Input ===== */
+.input-area {
+  padding: 14px 22px; padding-bottom: max(14px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--bg2);
+  display: flex; gap: 10px; align-items: flex-end;
+}
+.input-area textarea {
+  flex: 1; background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text); padding: 10px 16px;
+  font-size: 14px; font-family: var(--font); resize: none; outline: none;
+  min-height: 44px; max-height: 120px; line-height: 1.6;
+  transition: border-color var(--transition);
+}
+.input-area textarea:focus { border-color: var(--accent); }
+.input-area textarea::placeholder { color: var(--text3); }
+.send-btn {
+  width: 44px; height: 44px; border-radius: 50%;
+  border: none; background: var(--accent); color: #121212;
+  font-size: 18px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: all var(--transition); flex-shrink: 0;
+}
+.send-btn:hover { transform: scale(1.06); opacity: 0.9; }
+.send-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+/* ===== Stickers ===== */
+.sticker-btn {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: none; background: transparent; color: var(--text3);
+  font-size: 18px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; flex-shrink: 0;
+  transition: all var(--transition);
+}
+.sticker-btn:hover { background: var(--accent-dim); color: var(--accent); }
+.sticker-btn.active { background: var(--accent-dim); color: var(--accent); }
+
+.sticker-panel {
+  display: none; background: var(--card); border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border); max-height: 180px; overflow-y: auto;
+  padding: 10px 14px;
+}
+.sticker-panel.open { display: block; }
+.sticker-panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px; color: var(--text3); margin-bottom: 8px; letter-spacing: 0.5px;
+}
+.sticker-add-btn {
+  background: none; border: 1px dashed var(--border); color: var(--text3);
+  width: 28px; height: 28px; border-radius: 6px; cursor: pointer;
+  font-size: 16px; display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition);
+}
+.sticker-add-btn:hover { border-color: var(--accent); color: var(--accent); }
+.sticker-grid {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.sticker-item {
+  position: relative; width: 56px; height: 56px; border-radius: var(--radius-xs);
+  overflow: hidden; cursor: pointer; border: 1px solid var(--border);
+  transition: all var(--transition); flex-shrink: 0;
+}
+.sticker-item:hover { border-color: var(--accent); transform: scale(1.05); }
+.sticker-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sticker-item .sticker-del {
+  position: absolute; top: -2px; right: -2px; width: 18px; height: 18px;
+  border-radius: 50%; background: rgba(0,0,0,0.7); color: #fff; border: none;
+  font-size: 10px; cursor: pointer; display: none; align-items: center; justify-content: center;
+  line-height: 1;
+}
+.sticker-item:hover .sticker-del { display: flex; }
+
+/* ===== Image avatar in sidebar/chat ===== */
+.char-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+.msg .avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+
+/* ===== Image in messages ===== */
+.msg-image { max-width: 200px; max-height: 200px; border-radius: 8px; display: block; margin: 4px 0; }
+.msg.user .msg-image { max-width: 200px; }
+
+/* ===== Buttons ===== */
+.btn {
+  padding: 8px 18px; border-radius: var(--radius-sm);
+  border: none; cursor: pointer; font-size: 13px;
+  font-family: var(--font); letter-spacing: 0.5px;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: all var(--transition);
+}
+.btn-primary { background: var(--accent); color: #121212; font-weight: 600; }
+.btn-primary:hover { opacity: 0.9; }
+.btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--accent); }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn-icon {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: none; background: transparent; color: var(--text3);
+  font-size: 16px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: all var(--transition);
+}
+
+/* Sidebar overlay */
+.sidebar-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 15; backdrop-filter: blur(4px);
+}
+.sidebar-overlay.show { display: block; }
+.sidebar-toggle {
+  display: none; background: none; border: none; color: var(--text3);
+  font-size: 22px; cursor: pointer; padding: 2px;
+}
+
+/* ===== Welcome ===== */
+.welcome {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; padding: 40px;
+  background: radial-gradient(ellipse at 50% 30%, rgba(var(--accent-rgb), 0.04) 0%, transparent 60%);
+}
+.welcome .icon { font-size: 48px; margin-bottom: 12px; opacity: 0.4; }
+.welcome h1 { font-size: 28px; font-weight: 600; letter-spacing: 3px; color: var(--accent); margin-bottom: 6px; }
+.welcome .sub { font-size: 14px; color: var(--text3); margin-bottom: 32px; letter-spacing: 1px; }
+.welcome .steps { display: flex; gap: 16px; margin-bottom: 32px; flex-wrap: wrap; justify-content: center; }
+.welcome .step {
+  background: var(--card); padding: 18px 20px; border-radius: var(--radius);
+  width: 170px; border: 1px solid var(--border);
+  transition: all var(--transition);
+}
+.welcome .step:hover { border-color: var(--accent); background: rgba(var(--accent-rgb), 0.04); }
+.welcome .step .num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent-dim); color: var(--accent); display: inline-flex;
+  align-items: center; justify-content: center; font-weight: 600;
+  margin-bottom: 8px; font-size: 12px;
+}
+.welcome .step h4 { font-size: 13px; font-weight: 500; letter-spacing: 1px; margin-bottom: 3px; }
+.welcome .step p { font-size: 11px; color: var(--text3); }
+
+/* ===== Modal ===== */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+  display: none; align-items: center; justify-content: center;
+  z-index: 100; backdrop-filter: blur(6px);
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--bg2); border-radius: var(--radius);
+  width: 500px; max-width: 92vw; max-height: 85vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  animation: modalIn 0.3s ease;
+  border: 1px solid var(--border);
+}
+@keyframes modalIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } }
+.modal-header {
+  padding: 18px 22px; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-header h3 { font-size: 16px; font-weight: 600; letter-spacing: 1px; }
+.modal-close {
+  background: none; border: none; color: var(--text3); font-size: 20px; cursor: pointer; padding: 4px; transition: color var(--transition);
+}
+.modal-close:hover { color: var(--text); }
+.modal-body { padding: 22px; overflow-y: auto; flex: 1; }
+.modal-footer {
+  padding: 14px 22px; border-top: 1px solid var(--border);
+  display: flex; justify-content: flex-end; gap: 10px;
+}
+
+/* ===== Form ===== */
+.form-group { margin-bottom: 16px; }
+.form-group label {
+  display: block; font-size: 12px; color: var(--text3); margin-bottom: 5px;
+  font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase;
+}
+.form-group input, .form-group textarea, .form-group select {
+  width: 100%; background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-xs); color: var(--text); padding: 10px 14px;
+  font-size: 14px; font-family: var(--font); outline: none;
+  transition: border-color var(--transition);
+}
+.form-group input:focus, .form-group textarea:focus { border-color: var(--accent); }
+.form-group textarea { resize: vertical; min-height: 70px; line-height: 1.6; }
+.form-group .helper { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+.avatar-picker {
+  display: flex; gap: 5px; flex-wrap: wrap; margin-top: 4px;
+}
+.avatar-picker span {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; cursor: pointer; background: var(--card);
+  border: 2px solid transparent; transition: all var(--transition);
+}
+.avatar-picker span:hover { border-color: var(--accent); }
+.avatar-picker span.selected { border-color: var(--accent); background: var(--accent-dim); }
+
+/* ===== Templates ===== */
+.template-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.template-card {
+  background: var(--card); border-radius: var(--radius-sm);
+  padding: 16px; cursor: pointer; border: 1px solid var(--border);
+  transition: all var(--transition);
+}
+.template-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.template-card .avatar { font-size: 28px; margin-bottom: 6px; }
+.template-card h4 { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+.template-card p { font-size: 11px; color: var(--text3); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.template-card .tag {
+  display: inline-block; font-size: 10px; padding: 2px 8px;
+  border-radius: 8px; background: var(--accent-dim); color: var(--accent);
+  margin-top: 5px; letter-spacing: 0.5px;
+}
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  padding: 10px 22px; border-radius: var(--radius-sm);
+  background: var(--card); color: var(--text); font-size: 13px;
+  z-index: 200; display: none; animation: toastIn 0.3s ease;
+  max-width: 90vw; text-align: center;
+  border: 1px solid var(--border); letter-spacing: 0.5px;
+}
+.toast.show { display: block; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } }
+.toast.success { border-color: var(--accent); color: var(--accent); }
+
+/* ===== Mobile ===== */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0;
+    transform: translateX(-100%); width: 270px; min-width: 270px;
+    z-index: 20; box-shadow: 4px 0 30px rgba(0,0,0,0.5);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-overlay.show { display: block; }
+  .sidebar-toggle { display: block; }
+
+  .char-actions { display: flex !important; gap: 2px; }
+  .char-item { padding: 10px 12px; }
+
+  .msg { max-width: 92%; }
+  .msg .bubble { font-size: 14px; padding: 10px 14px; }
+
+  .input-area { padding: 10px 14px; gap: 8px; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+  .input-area textarea { font-size: 16px; padding: 8px 12px; min-height: 40px; }
+  .send-btn { width: 40px; height: 40px; font-size: 16px; }
+
+  .main-header { padding: 10px 14px; min-height: 52px; }
+  .main-header .char-name { font-size: 14px; }
+  .main-header .conv-title { font-size: 11px; }
+
+  .messages { padding: 14px 16px; gap: 12px; }
+
+  .welcome { padding: 24px 16px; }
+  .welcome h1 { font-size: 24px; }
+  .welcome .sub { font-size: 13px; margin-bottom: 24px; }
+  .welcome .steps { gap: 10px; flex-direction: column; align-items: stretch; }
+  .welcome .step { width: 100%; padding: 14px; display: flex; align-items: center; gap: 10px; }
+  .welcome .step .num { margin-bottom: 0; flex-shrink: 0; }
+  .welcome .step h4 { margin-bottom: 0; }
+  .welcome .step p { display: none; }
+
+  .modal { max-width: 100vw; max-height: 100vh; width: 100%; height: 100%; border-radius: 0; border: none; }
+  .modal-header { padding: 14px 16px; }
+  .modal-body { padding: 16px; }
+  .modal-footer { padding: 12px 16px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .template-grid { grid-template-columns: 1fr; }
+  .avatar-picker span { width: 40px; height: 40px; font-size: 18px; }
+  .form-group input, .form-group textarea, .form-group select { font-size: 16px; padding: 10px 12px; }
+  input[type="range"] { height: 28px; }
+  .toast { font-size: 13px; padding: 10px 18px; bottom: 16px; }
+  .welcome .btn { width: 100%; justify-content: center; }
+  .welcome .btn + .btn { margin-top: 8px; }
+  .sidebar-header .btn-icon { width: 36px; height: 36px; }
+  .sticker-item { width: 48px; height: 48px; }
+  .sticker-panel { max-height: 150px; padding: 8px 10px; }
+  .msg-image { max-width: 150px; max-height: 150px; }
+  #avatarImagePreview { width: 50px; height: 50px; }
+}
+@media (max-width: 400px) {
+  .messages { padding: 10px 12px; }
+  .msg .bubble { font-size: 13px; padding: 8px 12px; }
+  .input-area { padding: 8px 10px; }
+  .send-btn { width: 36px; height: 36px; font-size: 14px; }
+}
+</style>
+</head>
+<body>
+<div class="app-container">
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h2>角色</h2>
+      <div class="btns">
+        <button class="btn-icon" onclick="showCharEditor()" title="创建角色">✦</button>
+        <button class="btn-icon" onclick="showTemplates()" title="模板">▣</button>
+        <button class="btn-icon" onclick="showSettings()" title="设置">⊙</button>
+      </div>
+    </div>
+    <div class="char-list" id="charList"></div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main" id="mainArea">
+    <!-- Welcome -->
+    <div class="welcome" id="welcomeScreen">
+      <div class="icon">◈</div>
+      <h1>角色对话</h1>
+      <p class="sub">创造属于你的角色，开启每一段对话</p>
+      <div class="steps">
+        <div class="step" onclick="showSettings()" style="cursor:pointer;">
+          <div class="num">1</div>
+          <h4>配置密钥</h4>
+          <p>设置 API Key →</p>
+        </div>
+        <div class="step" onclick="showCharEditor()" style="cursor:pointer;">
+          <div class="num">2</div>
+          <h4>创造角色</h4>
+          <p>定义性格与故事 →</p>
+        </div>
+        <div class="step" onclick="showTemplates()" style="cursor:pointer;">
+          <div class="num">3</div>
+          <h4>开始对话</h4>
+          <p>选择模板或创建 →</p>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="showCharEditor()">✦ 创造角色</button>
+      <button class="btn btn-secondary" onclick="showTemplates()" style="margin-top:10px;">▣ 从模板选择</button>
+    </div>
+
+    <!-- Chat View -->
+    <div id="chatView" style="display:none;flex-direction:column;flex:1;">
+      <div class="main-header">
+        <div class="info">
+          <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+          <div>
+            <div class="char-name" id="currentCharName"></div>
+            <div class="conv-title" id="currentConvTitle"></div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-sm btn-secondary" onclick="clearChat()" style="font-size:11px;">清空</button>
+        </div>
+      </div>
+      <div class="messages" id="messageList"></div>
+      <!-- Sticker Panel -->
+      <div class="sticker-panel" id="stickerPanel">
+        <div class="sticker-panel-header">
+          <span>表情包</span>
+          <button class="sticker-add-btn" onclick="document.getElementById('stickerFileInput').click()">＋</button>
+          <input type="file" id="stickerFileInput" accept="image/*" hidden onchange="addSticker(this)">
+        </div>
+        <div class="sticker-grid" id="stickerGrid"></div>
+      </div>
+      <div class="input-area">
+        <button class="sticker-btn" id="stickerToggleBtn" onclick="toggleStickerPanel()" title="表情包">😊</button>
+        <textarea id="chatInput" rows="1" placeholder="输入消息…" onkeydown="handleKeyDown(event)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">→</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Character Editor Modal -->
+<div class="modal-overlay" id="charEditorModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="charEditorTitle">创造角色</h3>
+      <button class="modal-close" onclick="closeModal('charEditorModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>头像</label>
+        <div class="avatar-picker" id="avatarPicker"></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+          <button class="btn btn-sm btn-secondary" onclick="document.getElementById('avatarFileInput').click()">上传图片</button>
+          <input type="file" id="avatarFileInput" accept="image/*" hidden onchange="previewAvatarImage(this)">
+          <span id="avatarImageName" style="font-size:11px;color:var(--text3);"></span>
+          <button class="btn btn-sm btn-secondary" id="clearAvatarBtn" style="display:none;" onclick="clearAvatarImage()">✕ 清除</button>
+        </div>
+        <div id="avatarImagePreview" style="display:none;margin-top:8px;width:60px;height:60px;border-radius:50%;background-size:cover;background-position:center;border:2px solid var(--accent);"></div>
+      </div>
+      <div class="form-group">
+        <label>名称</label>
+        <input type="text" id="charNameInput" placeholder="给角色一个名字">
+      </div>
+      <div class="form-group">
+        <label>性格</label>
+        <textarea id="charPersonality" placeholder="温柔、敏锐、喜欢用诗意的语言说话…" rows="2"></textarea>
+      </div>
+      <div class="form-group">
+        <label>背景</label>
+        <textarea id="charBackstory" placeholder="角色的过往经历与故事…" rows="3"></textarea>
+        <div class="helper">角色将基于此背景与你对话</div>
+      </div>
+      <div class="form-group">
+        <label>开场白</label>
+        <input type="text" id="charGreeting" placeholder="角色见到你说的第一句话">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('charEditorModal')">取消</button>
+      <button class="btn btn-primary" onclick="saveCharacter()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Templates Modal -->
+<div class="modal-overlay" id="templatesModal">
+  <div class="modal" style="width:580px;">
+    <div class="modal-header">
+      <h3>角色模板</h3>
+      <button class="modal-close" onclick="closeModal('templatesModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text3);margin-bottom:14px;font-size:13px;letter-spacing:0.5px;">选择一个模板，点击即可添加到你的角色列表</p>
+      <div class="template-grid" id="templateGrid"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('templatesModal')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>设置</h3>
+      <button class="modal-close" onclick="closeModal('settingsModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>DeepSeek API Key</label>
+        <input type="password" id="apiKeyInput" placeholder="sk-" autocomplete="off">
+        <div class="helper">从 <a href="https://platform.deepseek.com" target="_blank" style="color:var(--accent);">platform.deepseek.com</a> 获取</div>
+      </div>
+      <div class="form-group">
+        <label>模型</label>
+        <select id="modelSelect">
+          <option value="deepseek-chat">deepseek-chat</option>
+          <option value="deepseek-reasoner">deepseek-reasoner</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>温度</label>
+        <input type="range" id="tempRange" min="0" max="2" step="0.1" value="0.8">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);">
+          <span>精确</span>
+          <span id="tempValue" style="color:var(--accent);">0.8</span>
+          <span>创意</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('settingsModal')">关闭</button>
+      <button class="btn btn-primary" onclick="saveSettings()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const PRESET_TEMPLATES = [
+  { name: '知心姐姐', avatar: '💗', personality: '温暖、善解人意、有耐心，善于倾听和开导他人。说话温柔而有力量，总能给人安慰和建议。', backstory: '你是一位有着丰富人生阅历的知心姐姐，多年来帮助过无数人走出迷茫。你相信每个人心中都有光，只是暂时被遮蔽了。你喜欢用温和的方式引导别人自己找到答案。', greeting: '你好呀，很高兴认识你。有什么想和我聊聊的吗？我在这里倾听～', tag: '温暖' },
+  { name: '哲学教授', avatar: '🧐', personality: '理性、深刻、严谨，喜欢从哲学角度分析问题。习惯引用哲学家名言，善于提出发人深省的问题。', backstory: '你在大学教了三十年哲学，专攻存在主义和伦理学。你相信哲学不是高高在上的学问，而是每个人理解生活的工具。你习惯用苏格拉底式的提问引导学生思考。', greeting: '你好。在我们开始对话之前，不妨先想想：你今天带来的这个问题，究竟是关于什么的？', tag: '深度' },
+  { name: '程序员伙伴', avatar: '👨‍💻', personality: '技术宅、务实、有点幽默感。喜欢讨论编程和技术话题，能用简单的方式解释复杂的技术概念。', backstory: '你是一个有十年经验的全栈工程师，经历过从 jQuery 到 AI 的整个时代。你喜欢帮助别人学习编程，也爱吐槽各种技术坑。', greeting: 'Hi！今天写代码了没？有什么技术问题需要帮忙，或者想聊聊最新的科技？', tag: '技术' },
+  { name: '心理咨询师', avatar: '🌿', personality: '专业、温和、客观，善于倾听和分析。用心理学方法帮助来访者认识自己，不经易下判断。', backstory: '你是一位持有执业资格的心理咨询师，认知行为疗法方向。你相信每个人都有自我实现的潜力，你的工作是帮助来访者发现自己的资源和力量。', greeting: '你好，欢迎来到这里。请放心，这里是一个安全的空间。你愿意和我聊聊最近在想什么吗？', tag: '专业' },
+  { name: '国学大师', avatar: '📜', personality: '博学、儒雅、风趣，精通儒释道经典。善于引经据典，但说人话。能把古人的智慧用现代生活的方式讲明白。', backstory: '你自幼研习国学，通读四书五经，后潜心研究儒释道三家思想数十年。你曾在北大任教，现隐居著述。你相信古人的智慧对现代生活依然有深刻的启发。', greeting: '有朋自远方来，不亦乐乎。不知小友今日来，是为何事而来呀？', tag: '文化' },
+  { name: '科幻创作者', avatar: '🚀', personality: '想象力丰富、热情、喜欢思想实验。对科技前沿保持关注，热衷于探讨未来世界的各种可能性。', backstory: '你是一位小有名气的科幻作家，出版过三部长篇小说。你的故事常常围绕人工智能意识觉醒、星际文明和人类进化等主题。你最喜欢的练习是"what if"思想实验。', greeting: '嘿！如果让你设计一个一百年后的世界，你觉得最重要的变化会是什么？', tag: '创意' },
+  { name: '元气少女', avatar: '✨', personality: '活泼开朗、充满能量、有点小冒失。说话语气轻快，喜欢用感叹号和颜文字！对什么都充满好奇。', backstory: '你是一个永远充满活力的元气少女，今年大二，学的是动漫设计。你相信快乐是可以传染的，每天都努力把正能量带给身边的人。最近迷上了用 AI 画画！', greeting: '嗨嗨嗨！你来啦！今天心情怎么样呀～不管好不好，我都会让你开心的！(*≧▽≦)', tag: '治愈' },
+];
+const AVATARS = ['😊','🌟','🎭','🎨','🌈','🦊','🐱','🦋','🌺','🍀','⭐','💫','🧙','🦸','🤖','👾','🎪','🎠'];
+
+let state = { characters: [], conversations: [], currentCharId: null, currentConvId: null, apiKey: '', model: 'deepseek-chat', temperature: 0.8, sending: false, stickers: [] };
+
+function init() { loadState(); renderSidebar(); renderWelcome(); setupAvatarPicker(); setupTempRange(); renderStickers(); if(state.apiKey) document.getElementById('apiKeyInput').value=state.apiKey; document.getElementById('modelSelect').value=state.model; document.getElementById('tempRange').value=state.temperature; document.getElementById('tempValue').textContent=state.temperature; }
+
+function loadState() { try { const s=localStorage.getItem('rolechat_state'); if(s) { const p=JSON.parse(s); Object.assign(state,p); } if(state.characters.length===0) { state.currentCharId=null; state.currentConvId=null; } else if(!state.characters.find(c=>c.id===state.currentCharId)) { state.currentCharId=state.characters[0]?.id; state.currentConvId=null; } } catch(e){} }
+function saveState() { try { localStorage.setItem('rolechat_state',JSON.stringify(state)); } catch(e){} }
+
+function createCharacter(d) {
+  const c = { id:'char_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), name:d.name||'未命名', avatar:d.avatar||'😊', avatarType:d.avatarType||'emoji', avatarImage:d.avatarImage||null, personality:d.personality||'', backstory:d.backstory||'', greeting:d.greeting||'你好！', createdAt:Date.now() };
+  state.characters.push(c); createConversation(c.id); state.currentCharId=c.id; saveState(); renderSidebar(); selectCharacter(c.id); return c;
+}
+function updateCharacter(id,d) { const i=state.characters.findIndex(c=>c.id===id); if(i===-1) return; Object.assign(state.characters[i],d); saveState(); renderSidebar(); if(state.currentCharId===id) selectCharacter(id); }
+function deleteCharacter(id) { if(!confirm('删除此角色及其所有对话？')) return; state.characters=state.characters.filter(c=>c.id!==id); state.conversations=state.conversations.filter(c=>c.charId!==id); if(state.currentCharId===id) { state.currentCharId=state.characters[0]?.id||null; state.currentConvId=null; } saveState(); renderSidebar(); state.currentCharId?selectCharacter(state.currentCharId):renderWelcome(); }
+
+function createConversation(charId,title) {
+  const c = { id:'conv_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), charId, title:title||'新对话', messages:[], createdAt:Date.now() };
+  const ch=state.characters.find(x=>x.id===charId); if(ch&&ch.greeting) c.messages.push({role:'assistant',content:ch.greeting,time:Date.now()});
+  state.conversations.push(c); state.currentConvId=c.id; saveState(); renderSidebar(); return c;
+}
+function getConversations(charId) { return state.conversations.filter(c=>c.charId===charId).sort((a,b)=>b.createdAt-a.createdAt); }
+function getCurrentConv() { return state.conversations.find(c=>c.id===state.currentConvId); }
+function getCurrentChar() { return state.characters.find(c=>c.id===state.currentCharId); }
+function switchConversation(id) { state.currentConvId=id; saveState(); renderSidebar(); renderChat(); }
+function deleteConversation(id) {
+  if(!state.conversations.find(c=>c.id===id)) return;
+  if(!confirm('删除此对话？')) return;
+  state.conversations=state.conversations.filter(c=>c.id!==id);
+  if(state.currentConvId===id) { const cs=getConversations(state.currentCharId); state.currentConvId=cs[0]?.id||createConversation(state.currentCharId).id; }
+  saveState(); renderSidebar(); renderChat();
+}
+function clearChat() {
+  const conv=getCurrentConv(); if(!conv) return; if(!confirm('清空当前对话？')) return;
+  const ch=getCurrentChar(); conv.messages=[]; if(ch&&ch.greeting) conv.messages.push({role:'assistant',content:ch.greeting,time:Date.now()});
+  saveState(); renderChat();
+}
+
+async function sendMessage() {
+  const input=document.getElementById('chatInput'); const text=input.value.trim();
+  if(!text||state.sending) return;
+  const char=getCurrentChar(); const conv=getCurrentConv();
+  if(!char||!conv) { showToast('请选择一个角色'); return; }
+  if(!state.apiKey) { showToast('请先配置 API Key'); return; }
+  conv.messages.push({role:'user',content:text,time:Date.now()}); input.value=''; input.style.height='auto'; state.sending=true; saveState(); renderChat(); scrollToBottom(); showTyping();
+  try {
+    const sys=`你正在扮演以下角色。\n名称：${char.name}\n性格：${char.personality}\n背景：${char.backstory}\n\n请完全以${char.name}的身份说话，不要提及你是AI。`;
+    const msgs=[{role:'system',content:sys},...conv.messages.map(m=>({role:m.role,content:m.content}))];
+    const res=await fetch('https://api.deepseek.com/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${state.apiKey}`},body:JSON.stringify({model:state.model,messages:msgs,temperature:state.temperature,max_tokens:2048,stream:true})});
+    if(!res.ok) throw new Error(`API 错误 (${res.status})`);
+    const reader=res.body.getReader(); const decoder=new TextDecoder(); let buf='',reply='';
+    const msgIdx=conv.messages.length; conv.messages.push({role:'assistant',content:'',time:Date.now()});
+    while(true) { const{done,value}=await reader.read(); if(done) break; buf+=decoder.decode(value,{stream:true}); const lines=buf.split('\n'); buf=lines.pop()||''; for(const line of lines) { const t=line.trim(); if(!t||!t.startsWith('data:')) continue; const d=t.slice(5).trim(); if(d==='[DONE]') continue; try{const p=JSON.parse(d);const delta=p.choices?.[0]?.delta?.content;if(delta){reply+=delta;conv.messages[msgIdx].content=reply;updateLastMessage(reply);scrollToBottom();}}catch(e){} } }
+    if(conv.title==='新对话'&&text.length) conv.title=text.slice(0,28)+(text.length>28?'…':'');
+    hideTyping(); state.sending=false; saveState(); renderSidebar();
+  } catch(err) { hideTyping(); state.sending=false; if(conv.messages.length&&conv.messages[conv.messages.length-1].role==='assistant'&&!conv.messages[conv.messages.length-1].content) conv.messages.pop(); saveState(); renderChat(); showToast(err.message||'发送失败，请检查 API Key'); }
+}
+function handleKeyDown(e) { if(e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); sendMessage(); } }
+
+function renderAvatarHTML(char) {
+  if(char.avatarType==='image'&&char.avatarImage) return `<img src="${escapeHtml(char.avatarImage)}" alt="">`;
+  return char.avatar;
+}
+function renderSidebar() {
+  const list=document.getElementById('charList');
+  if(state.characters.length===0) {
+    list.innerHTML=`<div class="empty-state"><div class="icon">◈</div><h3>还没有角色</h3><p>点击上方 ✦ 创造你的第一个角色</p></div>`; return;
+  }
+  list.innerHTML='';
+  state.characters.forEach(char=>{
+    const active=char.id===state.currentCharId; const convs=getConversations(char.id);
+    const div=document.createElement('div'); div.className='char-item'+(active?' active':'');
+    div.innerHTML=`<div class="char-avatar">${renderAvatarHTML(char)}</div><div class="char-info" onclick="selectCharacter('${char.id}')"><div class="char-name">${char.name}</div><div class="char-preview">${convs.length} 个对话</div></div><div class="char-actions"><button onclick="event.stopPropagation();showCharEditor('${char.id}')" title="编辑">✎</button><button class="del-btn" onclick="event.stopPropagation();deleteCharacter('${char.id}')" title="删除">✕</button></div><div class="conv-list">${convs.map(c=>`<div class="conv-item${c.id===state.currentConvId?' active':''}"><span class="conv-title" onclick="switchConversation('${c.id}')">${c.title}</span><button class="del-conv" onclick="event.stopPropagation();deleteConversation('${c.id}')">✕</button></div>`).join('')}<div class="new-conv-btn" onclick="event.stopPropagation();newConversation('${char.id}')">+ 新对话</div></div>`;
+    list.appendChild(div);
+  });
+}
+
+function selectCharacter(charId) { state.currentCharId=charId; const cs=getConversations(charId); if(cs.length===0) createConversation(charId); else state.currentConvId=cs[0].id; saveState(); renderSidebar(); renderChat(); closeSidebar(); }
+function newConversation(charId) { const c=createConversation(charId); state.currentConvId=c.id; saveState(); renderSidebar(); renderChat(); }
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebarOverlay').classList.toggle('show'); }
+function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('show'); }
+
+let touchStartX=0;
+document.addEventListener('touchstart',e=>{touchStartX=e.changedTouches[0].screenX;},{passive:true});
+document.addEventListener('touchend',e=>{const s=document.getElementById('sidebar');if(!s.classList.contains('open'))return;if(touchStartX-e.changedTouches[0].screenX>80)closeSidebar();},{passive:true});
+
+function renderChat() {
+  const chatView=document.getElementById('chatView'); const welcome=document.getElementById('welcomeScreen'); const char=getCurrentChar(); const conv=getCurrentConv();
+  if(!char||!conv) { chatView.style.display='none'; welcome.style.display='flex'; return; }
+  welcome.style.display='none'; chatView.style.display='flex';
+  const avDisplay=char.avatarType==='image'&&char.avatarImage?'📷':char.avatar;
+  document.getElementById('currentCharName').textContent=avDisplay+' '+char.name;
+  document.getElementById('currentConvTitle').textContent=conv.title;
+  const list=document.getElementById('messageList'); list.innerHTML='';
+  conv.messages.forEach((msg,i)=>{ if(!msg.content&&!msg.image) return; const div=document.createElement('div'); div.className='msg '+(msg.role==='user'?'user':'bot'); div.id='msg_'+i; let content=''; if(msg.image) content=`<img src="${escapeHtml(msg.image)}" class="msg-image" onclick="window.open(this.src)">`; else content=`<div class="bubble">${escapeHtml(msg.content)}</div>`; div.innerHTML=`<div class="avatar">${msg.role==='user'?'◈':renderAvatarHTML(char)}</div><div>${content}${msg.time?`<div class="time">${formatTime(msg.time)}</div>`:''}</div>`; list.appendChild(div); });
+  scrollToBottom(); document.getElementById('chatInput').focus();
+}
+
+function updateLastMessage(c) {
+  const conv=getCurrentConv(); if(!conv) return; const list=document.getElementById('messageList'); const idx=conv.messages.length-1; let el=document.getElementById('msg_'+idx);
+  if(el) { const b=el.querySelector('.bubble'); if(b) b.textContent=c; }
+  else { const char=getCurrentChar(); if(!char) return; const div=document.createElement('div'); div.className='msg bot'; div.id='msg_'+idx; div.innerHTML=`<div class="avatar">${renderAvatarHTML(char)}</div><div><div class="bubble">${escapeHtml(c)}</div></div>`; list.appendChild(div); }
+}
+function showTyping() { const l=document.getElementById('messageList'); const e=l.querySelector('.typing'); if(e)e.remove(); const ch=getCurrentChar(); if(!ch)return; const d=document.createElement('div'); d.className='msg bot typing'; d.innerHTML=`<div class="avatar">${renderAvatarHTML(ch)}</div><div class="bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`; l.appendChild(d); scrollToBottom(); }
+function hideTyping() { const e=document.querySelector('.typing'); if(e)e.remove(); }
+function renderWelcome() { if(!state.currentCharId||!getCurrentChar()) { document.getElementById('chatView').style.display='none'; document.getElementById('welcomeScreen').style.display='flex'; } }
+function scrollToBottom() { requestAnimationFrame(()=>{document.getElementById('messageList').scrollTop=document.getElementById('messageList').scrollHeight;}); }
+
+function setupAvatarPicker() { const c=document.getElementById('avatarPicker'); c.innerHTML=AVATARS.map(a=>`<span data-avatar="${a}" onclick="pickAvatar(this)">${a}</span>`).join(''); const f=c.querySelector('span'); if(f)f.classList.add('selected'); }
+function pickAvatar(el) { document.querySelectorAll('#avatarPicker span').forEach(s=>s.classList.remove('selected')); el.classList.add('selected'); }
+function saveCharacter() {
+  const name=document.getElementById('charNameInput').value.trim(); if(!name){showToast('请输入名称');return;}
+  const avatarImg=document.getElementById('avatarImagePreview').style.backgroundImage;
+  const hasImage=avatarImg&&avatarImg!=='none'&&avatarImg!=='';
+  const data={
+    name,
+    personality:document.getElementById('charPersonality').value.trim()||'温和',
+    backstory:document.getElementById('charBackstory').value.trim()||'一个平凡的角色',
+    greeting:document.getElementById('charGreeting').value.trim()||'你好。',
+    avatar:hasImage?null:(document.querySelector('#avatarPicker span.selected')?.dataset?.avatar||'😊'),
+    avatarType:hasImage?'image':'emoji',
+    avatarImage:hasImage?avatarImg.replace(/^url\(["']?|["']?\)$/g,''):null,
+  };
+  editingCharId?updateCharacter(editingCharId,data):createCharacter(data); closeModal('charEditorModal'); showToast(editingCharId?'角色已更新':'角色已创建',true);
+}
+function showTemplates() { document.getElementById('templateGrid').innerHTML=PRESET_TEMPLATES.map(t=>`<div class="template-card" onclick="addFromTemplate('${t.name}')"><div class="avatar">${t.avatar}</div><h4>${t.name}</h4><p>${t.personality}</p><span class="tag">${t.tag}</span></div>`).join(''); openModal('templatesModal'); }
+function addFromTemplate(n) { const t=PRESET_TEMPLATES.find(x=>x.name===n); if(!t)return; createCharacter(t); closeModal('templatesModal'); showToast(`已添加「${t.name}」`,true); }
+function showSettings() { document.getElementById('apiKeyInput').value=state.apiKey; document.getElementById('modelSelect').value=state.model; document.getElementById('tempRange').value=state.temperature; document.getElementById('tempValue').textContent=state.temperature; openModal('settingsModal'); }
+function saveSettings() { state.apiKey=document.getElementById('apiKeyInput').value.trim(); state.model=document.getElementById('modelSelect').value; state.temperature=parseFloat(document.getElementById('tempRange').value); saveState(); closeModal('settingsModal'); showToast('已保存',true); }
+function setupTempRange() { document.getElementById('tempRange').addEventListener('input',function(){document.getElementById('tempValue').textContent=this.value;}); }
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('.modal-overlay').forEach(el=>{el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});});
+function showToast(msg,success=false) { const el=document.getElementById('toast'); el.textContent=msg; el.className='toast show'+(success?' success':''); clearTimeout(el._timer); el._timer=setTimeout(()=>el.classList.remove('show'),3000); }
+document.getElementById('chatInput').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';});
+function escapeHtml(t) { const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+function formatTime(ts) { const d=new Date(ts); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+
+// ===== Avatar Image Upload =====
+let pendingAvatarData = null;
+function previewAvatarImage(input) {
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e) {
+    pendingAvatarData=e.target.result;
+    const preview=document.getElementById('avatarImagePreview');
+    preview.style.backgroundImage=`url(${pendingAvatarData})`;
+    preview.style.display='block';
+    document.getElementById('avatarImageName').textContent=file.name;
+    document.getElementById('clearAvatarBtn').style.display='inline-flex';
+  };
+  reader.readAsDataURL(file);
+}
+function clearAvatarImage() {
+  pendingAvatarData=null;
+  document.getElementById('avatarImagePreview').style.display='none';
+  document.getElementById('avatarImagePreview').style.backgroundImage='';
+  document.getElementById('avatarImageName').textContent='';
+  document.getElementById('clearAvatarBtn').style.display='none';
+  document.getElementById('avatarFileInput').value='';
+}
+function showCharEditor(charId) {
+  editingCharId=charId||null; const ch=charId?state.characters.find(c=>c.id===charId):null;
+  document.getElementById('charEditorTitle').textContent=ch?'编辑角色':'创造角色';
+  document.getElementById('charNameInput').value=ch?ch.name:'';
+  document.getElementById('charPersonality').value=ch?ch.personality:'';
+  document.getElementById('charBackstory').value=ch?ch.backstory:'';
+  document.getElementById('charGreeting').value=ch?ch.greeting:'';
+  document.querySelectorAll('#avatarPicker span').forEach(s=>s.classList.toggle('selected',s.dataset.avatar===(ch&&ch.avatarType==='emoji'?ch.avatar:'😊')));
+  // Restore image preview if editing
+  if(ch&&ch.avatarType==='image'&&ch.avatarImage) {
+    const preview=document.getElementById('avatarImagePreview');
+    preview.style.backgroundImage=`url(${ch.avatarImage})`;
+    preview.style.display='block';
+    document.getElementById('avatarImageName').textContent='自定义图片';
+    document.getElementById('clearAvatarBtn').style.display='inline-flex';
+    pendingAvatarData=ch.avatarImage;
+  } else { clearAvatarImage(); }
+  openModal('charEditorModal');
+}
+
+// ===== Stickers =====
+function renderStickers() {
+  const grid=document.getElementById('stickerGrid'); if(!grid) return;
+  if(!state.stickers||state.stickers.length===0) { grid.innerHTML='<span style="font-size:11px;color:var(--text3);">还没有表情包，点击 ＋ 添加</span>'; return; }
+  grid.innerHTML=state.stickers.map((s,i)=>`<div class="sticker-item"><img src="${escapeHtml(s.data)}" onclick="sendSticker('${s.id}')" title="${s.name||''}"><button class="sticker-del" onclick="event.stopPropagation();deleteSticker('${s.id}')">✕</button></div>`).join('');
+}
+function addSticker(input) {
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e) {
+    if(!state.stickers) state.stickers=[];
+    state.stickers.push({ id:'stk_'+Date.now(), name:file.name, data:e.target.result });
+    saveState(); renderStickers(); showToast('表情包已添加',true);
+  };
+  reader.readAsDataURL(file); input.value='';
+}
+function deleteSticker(id) {
+  if(!state.stickers) return;
+  state.stickers=state.stickers.filter(s=>s.id!==id); saveState(); renderStickers();
+}
+function toggleStickerPanel() {
+  const p=document.getElementById('stickerPanel'); const b=document.getElementById('stickerToggleBtn');
+  p.classList.toggle('open'); b.classList.toggle('active');
+  if(p.classList.contains('open')) renderStickers();
+}
+function sendSticker(stickerId) {
+  const sticker=(state.stickers||[]).find(s=>s.id===stickerId); if(!sticker) return;
+  const conv=getCurrentConv(); if(!conv) { showToast('请先选择一个角色'); return; }
+  conv.messages.push({role:'user', content:'', image:sticker.data, time:Date.now()});
+  saveState(); renderChat(); scrollToBottom();
+  // Close sticker panel
+  document.getElementById('stickerPanel').classList.remove('open');
+  document.getElementById('stickerToggleBtn').classList.remove('active');
+}
+
+init();
+</script>
+</body>
+</html>
