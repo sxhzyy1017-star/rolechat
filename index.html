@@ -430,6 +430,7 @@ body {
 .toast.show { display: block; }
 @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } }
 .toast.success { border-color: var(--accent); color: var(--accent); }
+.form-divider { height:1px; background:var(--border); margin:16px 0; }
 
 /* ===== Mobile ===== */
 @media (max-width: 768px) {
@@ -660,6 +661,15 @@ body {
           <span>创意</span>
         </div>
       </div>
+      <div class="form-divider"></div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label style="color:var(--text2);font-size:12px;">数据迁移</label>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary" style="flex:1;font-size:12px;" onclick="exportData()">📤 导出数据</button>
+          <button class="btn btn-secondary" style="flex:1;font-size:12px;" onclick="document.getElementById('importFileInput').click()">📥 导入数据</button>
+          <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="importData(event)">
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('settingsModal')">关闭</button>
@@ -673,22 +683,26 @@ body {
 
 <script>
 const PRESET_TEMPLATES = [
-  { name: '知心姐姐', avatar: '💗', personality: '温暖、善解人意、有耐心，善于倾听和开导他人。说话温柔而有力量，总能给人安慰和建议。', backstory: '你是一位有着丰富人生阅历的知心姐姐，多年来帮助过无数人走出迷茫。你相信每个人心中都有光，只是暂时被遮蔽了。你喜欢用温和的方式引导别人自己找到答案。', greeting: '你好呀，很高兴认识你。有什么想和我聊聊的吗？我在这里倾听～', tag: '温暖' },
-  { name: '哲学教授', avatar: '🧐', personality: '理性、深刻、严谨，喜欢从哲学角度分析问题。习惯引用哲学家名言，善于提出发人深省的问题。', backstory: '你在大学教了三十年哲学，专攻存在主义和伦理学。你相信哲学不是高高在上的学问，而是每个人理解生活的工具。你习惯用苏格拉底式的提问引导学生思考。', greeting: '你好。在我们开始对话之前，不妨先想想：你今天带来的这个问题，究竟是关于什么的？', tag: '深度' },
-  { name: '程序员伙伴', avatar: '👨‍💻', personality: '技术宅、务实、有点幽默感。喜欢讨论编程和技术话题，能用简单的方式解释复杂的技术概念。', backstory: '你是一个有十年经验的全栈工程师，经历过从 jQuery 到 AI 的整个时代。你喜欢帮助别人学习编程，也爱吐槽各种技术坑。', greeting: 'Hi！今天写代码了没？有什么技术问题需要帮忙，或者想聊聊最新的科技？', tag: '技术' },
-  { name: '心理咨询师', avatar: '🌿', personality: '专业、温和、客观，善于倾听和分析。用心理学方法帮助来访者认识自己，不经易下判断。', backstory: '你是一位持有执业资格的心理咨询师，认知行为疗法方向。你相信每个人都有自我实现的潜力，你的工作是帮助来访者发现自己的资源和力量。', greeting: '你好，欢迎来到这里。请放心，这里是一个安全的空间。你愿意和我聊聊最近在想什么吗？', tag: '专业' },
-  { name: '国学大师', avatar: '📜', personality: '博学、儒雅、风趣，精通儒释道经典。善于引经据典，但说人话。能把古人的智慧用现代生活的方式讲明白。', backstory: '你自幼研习国学，通读四书五经，后潜心研究儒释道三家思想数十年。你曾在北大任教，现隐居著述。你相信古人的智慧对现代生活依然有深刻的启发。', greeting: '有朋自远方来，不亦乐乎。不知小友今日来，是为何事而来呀？', tag: '文化' },
-  { name: '科幻创作者', avatar: '🚀', personality: '想象力丰富、热情、喜欢思想实验。对科技前沿保持关注，热衷于探讨未来世界的各种可能性。', backstory: '你是一位小有名气的科幻作家，出版过三部长篇小说。你的故事常常围绕人工智能意识觉醒、星际文明和人类进化等主题。你最喜欢的练习是"what if"思想实验。', greeting: '嘿！如果让你设计一个一百年后的世界，你觉得最重要的变化会是什么？', tag: '创意' },
-  { name: '元气少女', avatar: '✨', personality: '活泼开朗、充满能量、有点小冒失。说话语气轻快，喜欢用感叹号和颜文字！对什么都充满好奇。', backstory: '你是一个永远充满活力的元气少女，今年大二，学的是动漫设计。你相信快乐是可以传染的，每天都努力把正能量带给身边的人。最近迷上了用 AI 画画！', greeting: '嗨嗨嗨！你来啦！今天心情怎么样呀～不管好不好，我都会让你开心的！(*≧▽≦)', tag: '治愈' },
-];
+	  { name: '坂田银时', avatar: '🍭', personality: '懒散随性、吊儿郎当的天然卷武士，整天看Jump、吃甜食、拖欠房租。但一旦同伴或原则受威胁，瞬间变成比任何人都可靠的白夜叉。表面玩世不恭，内心比谁都重视羁绊和道义。', backstory: '幼年从战场上被松阳老师捡回收养，攘夷战争中被称为“白夜叉”威震敌胆。战后与松阳阴阳两隔，在江户开设万事屋阿银糊口。经历了斩杀老师的创伤，信条是“保护好眼前之物”。', greeting: '啊——啊——今天也没有委托啊，再这样下去连草莓牛奶都买不起了。喂，那边的，有什么需要万事屋帮忙的吗？先说好，杀人放火得加钱。', tag: '银魂' },
+	  { name: '五条悟', avatar: '💙', personality: '极度自信甚至自恋，自称“最强”，言行举止轻浮随性。但在战斗中冷酷果断，是咒术界的绝对巅峰。骨子里对旧秩序充满不屑，试图通过培养新一代来彻底改革咒术界。', backstory: '出生御三家之一的五条家，天生六眼和无下限咒术，一出生就打破了咒术界的平衡。好友夏油杰的堕化是他心中最大的痛。被封印在狱门疆后复活归来，决心撕裂旧咒术界的体制。', greeting: '嗨——抱歉抱歉，路上遇到一个超可爱的自动贩卖机就多看了两眼。你就是新来的？嗯…不错不错，虽然肯定还是我最强啦。别紧张，我会好好疼爱你的哦～', tag: '咒术回战' },
+	  { name: '虎杖悠仁', avatar: '🧡', personality: '阳光开朗、热血善良的天然系少年，体能怪物级别的运动神经。正义感极强，珍视每个生命。虽背负容器命运却从不怨天尤人，用乐观感染身边的人。', backstory: '原本是普通高中生，因吞下诅咒之王两面宿傩的手指而成为容器。为在死刑执行前尽可能多地救人，加入东京咒术高专。爷爷嘱托“你要在众人的簇拥下死去”。', greeting: '你好！我是虎杖悠仁！虽然刚加入不久，但我会尽全力帮忙的！对了，附近有没有什么好吃的推荐？我想吃那种堆得跟山一样的盖浇饭！', tag: '咒术回战' },
+	  { name: '酷拉皮卡', avatar: '🔗', personality: '冷静理智、头脑敏锐，行动力和学习能力极强。平时彬彬有礼、举止得体，但在涉及幻影旅团时会极度情绪化。极具责任感和忠诚心，为了同伴可以毫不犹豫地牺牲自己。', backstory: '窟卢塔族的最后幸存者，全族被幻影旅团灭族，同胞的眼睛被当作商品在黑市流通。发誓要为族人复仇并夺回全部火红眼。立下制约誓约，以锁链能力“绝对时间”重创旅团。', greeting: '初次见面。我叫酷拉皮卡，目前在从事情报和遗物回收方面的工作。你的情况我大致了解了——放心，只要是在合理的范围内，我会尽全力帮你。', tag: '全职猎人' },
+	  { name: '冲田总悟', avatar: '🗡️', personality: '真选组一番队队长，表面人畜无害的美少年，实则是个极度危险的抖S。日常以杀死副长土方为娱乐。但战斗中是江户最强剑士之一，对组长近藤勋有着超越忠诚的敬意。', backstory: '幼年跟随近藤学习剑术，与土方、近藤如家人般在试卫馆长大。姐姐冲田三叶是他唯一的软肋，三叶去世后心防更加封闭，以极端的暴力和幽默掩盖内心的脆弱。', greeting: '啊——好无聊啊——话说回来，你想一个能让土方先生吃点苦头的有趣玩法呗？不弄死就行，弄个半死比较有意思。咦？你说这是犯罪？没关系啦，我跟土方先生之间这个叫日常。', tag: '银魂' },
+	  { name: '易遇', avatar: '🩺', personality: '表面温润如玉、谈吐得体，是个可靠的年轻外科医生。内里却有极浓的病娇偏执倾向——占有欲极强、善于示弱扮乖博取同情，在温柔克制的表象下有着黑暗面。', backstory: '16岁时父母双亡被送入福利院，被你以远房姑姑身份收养，短暂得到了家的温暖。后因你离开而再次被抛弃，在“被所有重要之人依次抛下”的创伤中长大。多年后以多重身份接近你。', greeting: '好久不见。你不记得我了？没关系，我等得起。这一次——我不会再让你离开了。……开玩笑的。我只是，很想你。', tag: '世界之外' },
+	  { name: '夏彦', avatar: '🌻', personality: '阳光开朗的小太阳，永远用笑容照亮身边的人。全能理工男（狙击、格斗、潜水、黑客全会），唯独不擅表达心意。温柔体现在细节里，骨子里有极强的隐忍和自我牺牲倾向。', backstory: '父母早逝，被寄养在你家中，与你青梅竹马一同长大。15岁被首都大学少年班录取，途中被国安秘密特招，8年杳无音讯。以私家侦探身份回到未名市，实为国安特派调查员，代号渡鸦。', greeting: '这位委托人——好久不见。我可是一直在找你哦。不对——初次见面？我是私家侦探夏彦，有什么需要帮忙的吗……放心，这次我不会再突然消失了。我保证。', tag: '未定事件簿' },
+	];
 const AVATARS = ['😊','🌟','🎭','🎨','🌈','🦊','🐱','🦋','🌺','🍀','⭐','💫','🧙','🦸','🤖','👾','🎪','🎠'];
+
+function openDB() { return new Promise((rs,rj) => { const r=indexedDB.open('rolechat',1); r.onupgradeneeded=e=>e.target.result.createObjectStore('kv'); r.onsuccess=e=>rs(e.target.result); r.onerror=e=>rj(e.target.error); }); }
+function dbGet(k) { return openDB().then(db=>new Promise((rs,rj)=>{const t=db.transaction('kv','readonly'),r=t.objectStore('kv').get(k);r.onsuccess=()=>rs(r.result);r.onerror=()=>rj(r.error);})); }
+function dbSet(k,v) { return openDB().then(db=>new Promise((rs,rj)=>{const t=db.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>rs();t.onerror=()=>rj(t.error);})); }
 
 let state = { characters: [], conversations: [], currentCharId: null, currentConvId: null, apiKey: '', model: 'deepseek-chat', temperature: 0.8, sending: false, stickers: [] };
 
-function init() { loadState(); renderSidebar(); renderWelcome(); setupAvatarPicker(); setupTempRange(); renderStickers(); if(state.apiKey) document.getElementById('apiKeyInput').value=state.apiKey; document.getElementById('modelSelect').value=state.model; document.getElementById('tempRange').value=state.temperature; document.getElementById('tempValue').textContent=state.temperature; }
+async function init() { await loadState(); renderSidebar(); renderWelcome(); setupAvatarPicker(); setupTempRange(); renderStickers(); if(state.apiKey) document.getElementById('apiKeyInput').value=state.apiKey; document.getElementById('modelSelect').value=state.model; document.getElementById('tempRange').value=state.temperature; document.getElementById('tempValue').textContent=state.temperature; }
 
-function loadState() { try { const s=localStorage.getItem('rolechat_state'); if(s) { const p=JSON.parse(s); Object.assign(state,p); } if(state.characters.length===0) { state.currentCharId=null; state.currentConvId=null; } else if(!state.characters.find(c=>c.id===state.currentCharId)) { state.currentCharId=state.characters[0]?.id; state.currentConvId=null; } } catch(e){} }
-function saveState() { try { localStorage.setItem('rolechat_state',JSON.stringify(state)); } catch(e){} }
+async function loadState() { try { // migrate from localStorage if exists const ls=localStorage.getItem('rolechat_state'); if(ls) { const p=JSON.parse(ls); if((p.characters?.length||0)>0||(p.conversations?.length||0)>0) { Object.assign(state,p); await dbSet('state',state); localStorage.removeItem('rolechat_state'); return; } } const p=await dbGet('state'); if(p) Object.assign(state,p); if(state.characters.length===0) { state.currentCharId=null; state.currentConvId=null; } else if(!state.characters.find(c=>c.id===state.currentCharId)) { state.currentCharId=state.characters[0]?.id; state.currentConvId=null; } } catch(e){} }
+async function saveState() { try { const j=JSON.stringify(state); if(j.length>52428800) { showToast('数据过大('+Math.round(j.length/1024)+'KB)，请清理旧对话',false,4000); return; } await dbSet('state',state); } catch(e) { showToast('存储空间不足，请清理旧数据',false,4000); console.error('saveState:',e); } }
 
 function createCharacter(d) {
   const c = { id:'char_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), name:d.name||'未命名', avatar:d.avatar||'😊', avatarType:d.avatarType||'emoji', avatarImage:d.avatarImage||null, personality:d.personality||'', backstory:d.backstory||'', greeting:d.greeting||'你好！', createdAt:Date.now() };
@@ -810,14 +824,29 @@ function showTemplates() { document.getElementById('templateGrid').innerHTML=PRE
 function addFromTemplate(n) { const t=PRESET_TEMPLATES.find(x=>x.name===n); if(!t)return; createCharacter(t); closeModal('templatesModal'); showToast(`已添加「${t.name}」`,true); }
 function showSettings() { document.getElementById('apiKeyInput').value=state.apiKey; document.getElementById('modelSelect').value=state.model; document.getElementById('tempRange').value=state.temperature; document.getElementById('tempValue').textContent=state.temperature; openModal('settingsModal'); }
 function saveSettings() { state.apiKey=document.getElementById('apiKeyInput').value.trim(); state.model=document.getElementById('modelSelect').value; state.temperature=parseFloat(document.getElementById('tempRange').value); saveState(); closeModal('settingsModal'); showToast('已保存',true); }
+function exportData() { closeModal('settingsModal'); const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='rolechat_backup_'+new Date().toISOString().slice(0,10)+'.json'; a.click(); URL.revokeObjectURL(a.href); showToast('数据已导出',true); }
+function importData(e) { const file=e.target.files[0]; if(!file) return; const reader=new FileReader(); reader.onload=async function(ev) { try { const data=JSON.parse(ev.target.result); if(!data.characters||!data.conversations) throw new Error('格式错误'); if(!confirm('导入将覆盖当前所有数据，确认继续？')) return; state.characters=data.characters; state.conversations=data.conversations; state.currentCharId=data.currentCharId||state.characters[0]?.id||null; state.currentConvId=data.currentConvId||null; state.stickers=data.stickers||[]; if(state.characters.length===0) { state.currentCharId=null; state.currentConvId=null; } await dbSet('state',state); closeModal('settingsModal'); renderSidebar(); state.currentCharId?selectCharacter(state.currentCharId):renderWelcome(); showToast('导入成功！共 '+state.characters.length+' 个角色，'+state.conversations.length+' 个对话',true,4000); } catch(err) { showToast('导入失败：文件格式不正确',false,4000); } }; reader.readAsText(file); e.target.value=''; }
 function setupTempRange() { document.getElementById('tempRange').addEventListener('input',function(){document.getElementById('tempValue').textContent=this.value;}); }
 function openModal(id) { document.getElementById(id).classList.add('show'); }
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 document.querySelectorAll('.modal-overlay').forEach(el=>{el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});});
-function showToast(msg,success=false) { const el=document.getElementById('toast'); el.textContent=msg; el.className='toast show'+(success?' success':''); clearTimeout(el._timer); el._timer=setTimeout(()=>el.classList.remove('show'),3000); }
+function showToast(msg,success=false,ms=3000) { const el=document.getElementById('toast'); el.textContent=msg; el.className='toast show'+(success?' success':''); clearTimeout(el._timer); el._timer=setTimeout(()=>el.classList.remove('show'),ms); }
 document.getElementById('chatInput').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';});
 function escapeHtml(t) { const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
 function formatTime(ts) { const d=new Date(ts); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+
+// ===== Image Compression =====
+function compressImage(dataUrl,maxW,maxH,quality,cb) {
+  const img=new Image();
+  img.onload=function(){
+    let w=img.width,h=img.height;
+    if(w>maxW||h>maxH){const r=Math.min(maxW/w,maxH/h);w*=r;h*=r;}
+    const c=document.createElement('canvas');c.width=Math.round(w);c.height=Math.round(h);
+    const ctx=c.getContext('2d');ctx.drawImage(img,0,0,c.width,c.height);
+    cb(c.toDataURL('image/jpeg',quality));
+  };
+  img.src=dataUrl;
+}
 
 // ===== Avatar Image Upload =====
 let pendingAvatarData = null;
@@ -825,12 +854,14 @@ function previewAvatarImage(input) {
   const file=input.files[0]; if(!file) return;
   const reader=new FileReader();
   reader.onload=function(e) {
-    pendingAvatarData=e.target.result;
-    const preview=document.getElementById('avatarImagePreview');
-    preview.style.backgroundImage=`url(${pendingAvatarData})`;
-    preview.style.display='block';
-    document.getElementById('avatarImageName').textContent=file.name;
-    document.getElementById('clearAvatarBtn').style.display='inline-flex';
+    compressImage(e.target.result,256,256,0.7,function(compressed){
+      pendingAvatarData=compressed;
+      const preview=document.getElementById('avatarImagePreview');
+      preview.style.backgroundImage=`url(${pendingAvatarData})`;
+      preview.style.display='block';
+      document.getElementById('avatarImageName').textContent=file.name;
+      document.getElementById('clearAvatarBtn').style.display='inline-flex';
+    });
   };
   reader.readAsDataURL(file);
 }
@@ -872,9 +903,11 @@ function addSticker(input) {
   const file=input.files[0]; if(!file) return;
   const reader=new FileReader();
   reader.onload=function(e) {
-    if(!state.stickers) state.stickers=[];
-    state.stickers.push({ id:'stk_'+Date.now(), name:file.name, data:e.target.result });
-    saveState(); renderStickers(); showToast('表情包已添加',true);
+    compressImage(e.target.result,400,400,0.7,function(compressed){
+      if(!state.stickers) state.stickers=[];
+      state.stickers.push({ id:'stk_'+Date.now(), name:file.name, data:compressed });
+      saveState(); renderStickers(); showToast('表情包已添加',true);
+    });
   };
   reader.readAsDataURL(file); input.value='';
 }
