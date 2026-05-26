@@ -280,6 +280,8 @@ body {
 /* ===== Image in messages ===== */
 .msg-image { max-width: 200px; max-height: 200px; border-radius: 8px; display: block; margin: 4px 0; }
 .msg.user .msg-image { max-width: 200px; }
+.msg-sticker { max-width: 160px; max-height: 160px; border-radius: 12px; display: inline-block; vertical-align: middle; cursor: default; }
+.msg.bot .msg-sticker { display: block; margin: 8px 0; }
 
 /* ===== Buttons ===== */
 .btn {
@@ -483,6 +485,7 @@ body {
   .sticker-item { width: 48px; height: 48px; }
   .sticker-panel { max-height: 150px; padding: 8px 10px; }
   .msg-image { max-width: 150px; max-height: 150px; }
+  .msg-sticker { max-width: 120px; max-height: 120px; }
   #avatarImagePreview { width: 50px; height: 50px; }
 }
 @media (max-width: 400px) {
@@ -704,6 +707,11 @@ async function init() { await loadState(); renderSidebar(); renderWelcome(); set
 async function loadState() { try { // migrate from localStorage if exists const ls=localStorage.getItem('rolechat_state'); if(ls) { const p=JSON.parse(ls); if((p.characters?.length||0)>0||(p.conversations?.length||0)>0) { Object.assign(state,p); await dbSet('state',state); localStorage.removeItem('rolechat_state'); return; } } const p=await dbGet('state'); if(p) Object.assign(state,p); if(state.characters.length===0) { state.currentCharId=null; state.currentConvId=null; } else if(!state.characters.find(c=>c.id===state.currentCharId)) { state.currentCharId=state.characters[0]?.id; state.currentConvId=null; } } catch(e){} }
 async function saveState() { try { const j=JSON.stringify(state); if(j.length>52428800) { showToast('数据过大('+Math.round(j.length/1024)+'KB)，请清理旧对话',false,4000); return; } await dbSet('state',state); } catch(e) { showToast('存储空间不足，请清理旧数据',false,4000); console.error('saveState:',e); } }
 
+function renderContent(text) {
+  let html=escapeHtml(text);
+  if(state.stickers&&state.stickers.length) html=html.replace(/\[贴图:(.*?)\]/g,(_,n)=>{const s=state.stickers.find(stk=>stk.name===n.trim());return s?`<img src="${escapeHtml(s.data)}" class="msg-sticker" title="${escapeHtml(s.name)}">`:`<span style="color:var(--accent);">[${escapeHtml(n.trim())}]</span>`;});
+  return html;
+}
 function createCharacter(d) {
   const c = { id:'char_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), name:d.name||'未命名', avatar:d.avatar||'😊', avatarType:d.avatarType||'emoji', avatarImage:d.avatarImage||null, personality:d.personality||'', backstory:d.backstory||'', greeting:d.greeting||'你好！', createdAt:Date.now() };
   state.characters.push(c); createConversation(c.id); state.currentCharId=c.id; saveState(); renderSidebar(); selectCharacter(c.id); return c;
@@ -741,7 +749,8 @@ async function sendMessage() {
   if(!state.apiKey) { showToast('请先配置 API Key'); return; }
   conv.messages.push({role:'user',content:text,time:Date.now()}); input.value=''; input.style.height='auto'; state.sending=true; saveState(); renderChat(); scrollToBottom(); showTyping();
   try {
-    const sys=`你正在扮演以下角色。\n名称：${char.name}\n性格：${char.personality}\n背景：${char.backstory}\n\n请完全以${char.name}的身份说话，不要提及你是AI。`;
+    const stickerHint=state.stickers.length?`\n\n你可以使用贴图来让对话更生动。在回复中插入 [贴图:名称] 即可在合适的时候使用贴图。可用的贴图：\n${state.stickers.map(s=>`- ${s.name}`).join('\n')}\n\n注意：贴图应自然融入对话，不要过度使用。`:'';
+	    const sys=`你正在扮演以下角色。\n名称：${char.name}\n性格：${char.personality}\n背景：${char.backstory}\n\n请完全以${char.name}的身份说话，不要提及你是AI。${stickerHint}`;
     const msgs=[{role:'system',content:sys},...conv.messages.map(m=>({role:m.role,content:m.content}))];
     const res=await fetch('https://api.deepseek.com/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${state.apiKey}`},body:JSON.stringify({model:state.model,messages:msgs,temperature:state.temperature,max_tokens:2048,stream:true})});
     if(!res.ok) throw new Error(`API 错误 (${res.status})`);
@@ -789,14 +798,14 @@ function renderChat() {
   document.getElementById('currentCharName').textContent=avDisplay+' '+char.name;
   document.getElementById('currentConvTitle').textContent=conv.title;
   const list=document.getElementById('messageList'); list.innerHTML='';
-  conv.messages.forEach((msg,i)=>{ if(!msg.content&&!msg.image) return; const div=document.createElement('div'); div.className='msg '+(msg.role==='user'?'user':'bot'); div.id='msg_'+i; let content=''; if(msg.image) content=`<img src="${escapeHtml(msg.image)}" class="msg-image" onclick="window.open(this.src)">`; else content=`<div class="bubble">${escapeHtml(msg.content)}</div>`; div.innerHTML=`<div class="avatar">${msg.role==='user'?'◈':renderAvatarHTML(char)}</div><div>${content}${msg.time?`<div class="time">${formatTime(msg.time)}</div>`:''}</div>`; list.appendChild(div); });
+  conv.messages.forEach((msg,i)=>{ if(!msg.content&&!msg.image) return; const div=document.createElement('div'); div.className='msg '+(msg.role==='user'?'user':'bot'); div.id='msg_'+i; let content=''; if(msg.image) content=`<img src="${escapeHtml(msg.image)}" class="msg-image" onclick="window.open(this.src)">`; else content=`<div class="bubble">${renderContent(msg.content)}</div>`; div.innerHTML=`<div class="avatar">${msg.role==='user'?'◈':renderAvatarHTML(char)}</div><div>${content}${msg.time?`<div class="time">${formatTime(msg.time)}</div>`:''}</div>`;
   scrollToBottom(); document.getElementById('chatInput').focus();
 }
 
 function updateLastMessage(c) {
   const conv=getCurrentConv(); if(!conv) return; const list=document.getElementById('messageList'); const idx=conv.messages.length-1; let el=document.getElementById('msg_'+idx);
-  if(el) { const b=el.querySelector('.bubble'); if(b) b.textContent=c; }
-  else { const char=getCurrentChar(); if(!char) return; const div=document.createElement('div'); div.className='msg bot'; div.id='msg_'+idx; div.innerHTML=`<div class="avatar">${renderAvatarHTML(char)}</div><div><div class="bubble">${escapeHtml(c)}</div></div>`; list.appendChild(div); }
+  if(el) { const b=el.querySelector('.bubble'); if(b) b.innerHTML=renderContent(c); }
+  else { const char=getCurrentChar(); if(!char) return; const div=document.createElement('div'); div.className='msg bot'; div.id='msg_'+idx; div.innerHTML=`<div class="avatar">${renderAvatarHTML(char)}</div><div><div class="bubble">${renderContent(c)}</div></div>`; list.appendChild(div); }
 }
 function showTyping() { const l=document.getElementById('messageList'); const e=l.querySelector('.typing'); if(e)e.remove(); const ch=getCurrentChar(); if(!ch)return; const d=document.createElement('div'); d.className='msg bot typing'; d.innerHTML=`<div class="avatar">${renderAvatarHTML(ch)}</div><div class="bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`; l.appendChild(d); scrollToBottom(); }
 function hideTyping() { const e=document.querySelector('.typing'); if(e)e.remove(); }
