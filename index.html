@@ -665,6 +665,11 @@ body {
         </div>
       </div>
       <div class="form-divider"></div>
+      <div class="form-group">
+        <label>我的设定 <span style="color:var(--text3);font-weight:400;font-size:12px;">（告诉 AI 关于你的事，所有角色通用）</span></label>
+        <textarea id="userBackstoryInput" rows="3" placeholder="例：我叫小明，是一名高中生，性格活泼开朗，喜欢打篮球和听音乐。目前正在准备期末考试…" style="width:100%;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-xs);padding:10px;font-family:var(--font);font-size:13px;resize:vertical;outline:none;"></textarea>
+      </div>
+      <div class="form-divider"></div>
       <div class="form-group" style="margin-bottom:0;">
         <label style="color:var(--text2);font-size:12px;">数据迁移</label>
         <div style="display:flex;gap:8px;">
@@ -700,7 +705,7 @@ function openDB() { return new Promise((rs,rj) => { const r=indexedDB.open('role
 function dbGet(k) { return openDB().then(db=>new Promise((rs,rj)=>{const t=db.transaction('kv','readonly'),r=t.objectStore('kv').get(k);r.onsuccess=()=>rs(r.result);r.onerror=()=>rj(r.error);})); }
 function dbSet(k,v) { return openDB().then(db=>new Promise((rs,rj)=>{const t=db.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>rs();t.onerror=()=>rj(t.error);})); }
 
-let state = { characters: [], conversations: [], currentCharId: null, currentConvId: null, apiKey: '', model: 'deepseek-chat', temperature: 0.8, sending: false, stickers: [] };
+let state = { characters: [], conversations: [], currentCharId: null, currentConvId: null, apiKey: '', model: 'deepseek-chat', temperature: 0.8, sending: false, stickers: [], userBackstory: '' };
 
 async function init() { await loadState(); renderSidebar(); renderWelcome(); setupAvatarPicker(); setupTempRange(); renderStickers(); if(state.apiKey) document.getElementById('apiKeyInput').value=state.apiKey; document.getElementById('modelSelect').value=state.model; document.getElementById('tempRange').value=state.temperature; document.getElementById('tempValue').textContent=state.temperature; }
 
@@ -750,7 +755,8 @@ async function sendMessage() {
   conv.messages.push({role:'user',content:text,time:Date.now()}); input.value=''; input.style.height='auto'; state.sending=true; saveState(); renderChat(); scrollToBottom(); showTyping();
   try {
     const stickerHint=state.stickers.length?`\n\n你可以使用贴图来让对话更生动。在回复中插入 [贴图:名称] 即可在合适的时候使用贴图。可用的贴图：\n${state.stickers.map(s=>`- ${s.name}`).join('\n')}\n\n注意：贴图应自然融入对话，不要过度使用。`:'';
-	    const sys=`你正在扮演以下角色。\n名称：${char.name}\n性格：${char.personality}\n背景：${char.backstory}\n\n请完全以${char.name}的身份说话，不要提及你是AI。${stickerHint}`;
+const userHint=state.userBackstory?`\n\n关于与你对话的人（以下信息由对方提供）：${state.userBackstory}`:'';
+		    const sys=`你正在扮演以下角色。\n名称：${char.name}\n性格：${char.personality}\n背景：${char.backstory}\n\n请完全以${char.name}的身份说话，不要提及你是AI。${stickerHint}${userHint}`;
     const msgs=[{role:'system',content:sys},...conv.messages.map(m=>({role:m.role,content:m.content}))];
     const res=await fetch('https://api.deepseek.com/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${state.apiKey}`},body:JSON.stringify({model:state.model,messages:msgs,temperature:state.temperature,max_tokens:2048,stream:true})});
     if(!res.ok) throw new Error(`API 错误 (${res.status})`);
@@ -831,8 +837,8 @@ function saveCharacter() {
 }
 function showTemplates() { document.getElementById('templateGrid').innerHTML=PRESET_TEMPLATES.map(t=>`<div class="template-card" onclick="addFromTemplate('${t.name}')"><div class="avatar">${t.avatar}</div><h4>${t.name}</h4><p>${t.personality}</p><span class="tag">${t.tag}</span></div>`).join(''); openModal('templatesModal'); }
 function addFromTemplate(n) { const t=PRESET_TEMPLATES.find(x=>x.name===n); if(!t)return; createCharacter(t); closeModal('templatesModal'); showToast(`已添加「${t.name}」`,true); }
-function showSettings() { document.getElementById('apiKeyInput').value=state.apiKey; document.getElementById('modelSelect').value=state.model; document.getElementById('tempRange').value=state.temperature; document.getElementById('tempValue').textContent=state.temperature; openModal('settingsModal'); }
-function saveSettings() { state.apiKey=document.getElementById('apiKeyInput').value.trim(); state.model=document.getElementById('modelSelect').value; state.temperature=parseFloat(document.getElementById('tempRange').value); saveState(); closeModal('settingsModal'); showToast('已保存',true); }
+function showSettings() { document.getElementById('apiKeyInput').value=state.apiKey; document.getElementById('modelSelect').value=state.model; document.getElementById('tempRange').value=state.temperature; document.getElementById('tempValue').textContent=state.temperature; document.getElementById('userBackstoryInput').value=state.userBackstory||''; openModal('settingsModal'); }
+function saveSettings() { state.apiKey=document.getElementById('apiKeyInput').value.trim(); state.model=document.getElementById('modelSelect').value; state.temperature=parseFloat(document.getElementById('tempRange').value); state.userBackstory=document.getElementById('userBackstoryInput').value.trim(); saveState(); closeModal('settingsModal'); showToast('已保存',true); }
 function exportData() { closeModal('settingsModal'); const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='rolechat_backup_'+new Date().toISOString().slice(0,10)+'.json'; a.click(); URL.revokeObjectURL(a.href); showToast('数据已导出',true); }
 function importData(e) { const file=e.target.files[0]; if(!file) return; const reader=new FileReader(); reader.onload=async function(ev) { try { const data=JSON.parse(ev.target.result); if(!data.characters||!data.conversations) throw new Error('格式错误'); if(!confirm('导入将覆盖当前所有数据，确认继续？')) return; state.characters=data.characters; state.conversations=data.conversations; state.currentCharId=data.currentCharId||state.characters[0]?.id||null; state.currentConvId=data.currentConvId||null; state.stickers=data.stickers||[]; if(state.characters.length===0) { state.currentCharId=null; state.currentConvId=null; } await dbSet('state',state); closeModal('settingsModal'); renderSidebar(); state.currentCharId?selectCharacter(state.currentCharId):renderWelcome(); showToast('导入成功！共 '+state.characters.length+' 个角色，'+state.conversations.length+' 个对话',true,4000); } catch(err) { showToast('导入失败：文件格式不正确',false,4000); } }; reader.readAsText(file); e.target.value=''; }
 function setupTempRange() { document.getElementById('tempRange').addEventListener('input',function(){document.getElementById('tempValue').textContent=this.value;}); }
