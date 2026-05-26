@@ -798,7 +798,7 @@ function renderChat() {
   document.getElementById('currentCharName').textContent=avDisplay+' '+char.name;
   document.getElementById('currentConvTitle').textContent=conv.title;
   const list=document.getElementById('messageList'); list.innerHTML='';
-  conv.messages.forEach((msg,i)=>{ if(!msg.content&&!msg.image) return; const div=document.createElement('div'); div.className='msg '+(msg.role==='user'?'user':'bot'); div.id='msg_'+i; let content=''; if(msg.image) content=`<img src="${escapeHtml(msg.image)}" class="msg-image" onclick="window.open(this.src)">`; else content=`<div class="bubble">${renderContent(msg.content)}</div>`; div.innerHTML=`<div class="avatar">${msg.role==='user'?'◈':renderAvatarHTML(char)}</div><div>${content}${msg.time?`<div class="time">${formatTime(msg.time)}</div>`:''}</div>`;
+  conv.messages.forEach((msg,i)=>{ if(!msg.content&&!msg.image) return; const div=document.createElement('div'); div.className='msg '+(msg.role==='user'?'user':'bot'); div.id='msg_'+i; let content=''; if(msg.image) content=`<img src="${escapeHtml(msg.image)}" class="msg-image" onclick="window.open(this.src)">`; else content=`<div class="bubble">${renderContent(msg.content)}</div>`; div.innerHTML=`<div class="avatar">${msg.role==='user'?'◈':renderAvatarHTML(char)}</div><div>${content}${msg.time?`<div class="time">${formatTime(msg.time)}</div>`:''}</div>`; list.appendChild(div); });
   scrollToBottom(); document.getElementById('chatInput').focus();
 }
 
